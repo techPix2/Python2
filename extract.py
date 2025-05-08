@@ -178,3 +178,77 @@ def monitor_and_send(companyName, mobuID, api_url):
         except Exception as e:
             print(f"Erro durante o monitoramento: {str(e)}")
             time.sleep(2)
+
+
+# import time
+# import psutil
+# from setup import getDiscos, so
+
+# def cpuData():
+#     cpuFreq = psutil.cpu_freq()
+#     cpuPercent = psutil.cpu_percent()
+#     return cpuFreq, cpuPercent
+
+# def ramData():
+#     ramUsed = psutil.virtual_memory().used
+#     ramPercent = psutil.virtual_memory().percent
+#     return ramUsed, ramPercent
+
+# def diskData(path):
+#     diskUsed = psutil.disk_usage(path).used
+#     diskPercent = psutil.disk_usage(path).percent
+#     return diskUsed, diskPercent
+
+# def netData():
+#     bytesSend = psutil.net_io_counters().bytes_sent
+#     bytesRecv = psutil.net_io_counters().bytes_recv
+#     return bytesRecv, bytesSend
+
+# def colectALL():
+#     cpuFreq, cpuPercent = cpuData()
+#     ramUsed, ramPercent = ramData()
+#     netRecv, netSend = netData()
+#     discos = getDiscos(so)
+    
+#     discoStats = []
+#     for disco in discos:
+#         try:
+#             used, percent = diskData(disco['path'])
+#             discoStats.append((disco['path'], used, percent))
+#         except Exception as e:
+#             discoStats.append((disco['path'], None, None))
+#             print(f"Erro ao acessar disco {disco['path']}: {e}")
+
+#     return {
+#         "cpu_freq": cpuFreq.current,
+#         "cpu_percent": cpuPercent,
+#         "ram_used": ramUsed,
+#         "ram_percent": ramPercent,
+#         "net_recv": netRecv,
+#         "net_send": netSend,
+#         "discos": discoStats
+#     }
+
+# def monitor_and_send(companyName, mobuID, api_url=None):
+#     print(f"Iniciando monitoramento da máquina {mobuID} da empresa {companyName}...")
+#     while True:
+#         try:
+#             data = colectALL()
+#             print("\n=== DADOS DO SISTEMA ===")
+#             print(f"CPU: {data['cpu_percent']}% @ {data['cpu_freq']} MHz")
+#             print(f"RAM: {data['ram_used'] / (1024**3):.2f} GB usados ({data['ram_percent']}%)")
+#             print(f"Rede: Recebido {data['net_recv'] / (1024**2):.2f} MB | Enviado {data['net_send'] / (1024**2):.2f} MB")
+#             print("Discos:")
+#             for path, used, percent in data['discos']:
+#                 if used is not None:
+#                     print(f" - {path}: {used / (1024**3):.2f} GB usados ({percent}%)")
+#                 else:
+#                     print(f" - {path}: Erro ao acessar")
+#             time.sleep(2)
+
+#         except KeyboardInterrupt:
+#             print("\nMonitoramento encerrado pelo usuário.")
+#             break
+#         except Exception as e:
+#             print(f"Erro durante o monitoramento: {e}")
+#             time.sleep(2)
