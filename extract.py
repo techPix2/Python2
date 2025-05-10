@@ -1,12 +1,10 @@
+
 # import os
 # import psutil
-# import requests
-# import csv
 # from datetime import datetime
 # import time
-# from setup import getDiscos, so, getMobuId
+# from setup import getDiscos
 
-# urlFlask = "http://44.208.193.41:5000/s3/raw/upload"
 
 # def cpuData():
 #     cpuFreq = psutil.cpu_freq()
@@ -23,27 +21,10 @@
 #     diskPercent = psutil.disk_usage(path).percent
 #     return diskUsed, diskPercent
 
-# def tempoData():
-#     boot_time = psutil.boot_time()
-#     uptime_seconds = time.time() - boot_time
-#     uptime_str = time.strftime("%H:%M:%S", time.gmtime(uptime_seconds))
-#     return uptime_str
-
 # def netData():
 #     bytesSend = psutil.net_io_counters().bytes_sent
 #     bytesRecv = psutil.net_io_counters().bytes_recv
 #     return [bytesRecv, bytesSend]
-
-
-# def colectALL():
-#     cpudata = cpuData()
-#     RamData = ramData()
-#     discoData = diskData()
-#     net = netData()
-#     return[cpudata, RamData,discoData,net]
-
-
-
 
 # def processData():
 #     processes = []
@@ -60,218 +41,159 @@
 #             continue
 #     return processes
 
-# def send_file_to_api(file_path, api_url):
-#     try:
-#         with open(file_path, 'rb') as file:
-#             files = {'file': (os.path.basename(file_path), file)}
-#             response = requests.post(api_url, files=files)
+# def colectALL(discos):
+#     cpuFreq, cpuPercent = cpuData()
+#     ramUsed, ramPercent = ramData()
+#     netRecv, netSend = netData()
 
-#         if response.status_code == 200:
-#             print(f"Arquivo {file_path} enviado com sucesso para a API")
-#             os.remove(file_path)
-#             return True
-#         else:
-#             print(f"Erro ao enviar arquivo: {response.status_code} - {response.text}")
-#             return False
-#     except Exception as e:
-#         print(f"Falha ao enviar arquivo {file_path} para a API: {str(e)}")
-#         return False
+#     row = [
+#         cpuFreq.current,
+#         cpuPercent,
+#         ramUsed,
+#         ramPercent,
+#         netRecv,
+#         netSend
+#     ]
 
-# def monitor_and_send(companyName, mobuID, api_url):
-#     record_count = 0
-#     current_file = None
-#     current_process_file = None
-#     discos = None
+#     for disco in discos:
+#         try:
+#             disk_used, disk_percent = diskData(disco['path'])
+#             row.extend([disk_used, disk_percent])
+#         except Exception as e:
+#             print(f"Erro ao acessar disco {disco['path']}: {str(e)}")
+#             row.extend([None, None])
 
-#     def create_new_files():
-#         nonlocal current_file, current_process_file, discos, record_count
+#     return row
 
-#         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+# def monitorar():
+#     discos = getDiscos("linux")
 
-#         output_file = f"{companyName}_{mobuID}_{timestamp}.csv"
-#         process_file = f"{companyName}_{mobuID}_{timestamp}_process.csv"
-
-#         discos = getDiscos(so)
-
-#         with open(output_file, mode='w', newline='') as file:
-#             writer = csv.writer(file)
-#             headers = ['data_hora', 'uptime', 'cpu_freq', 'cpu_percent', 'ram_used', 'ram_percent']
-
-#             for disco in discos:
-#                 path_safe = disco['path'].replace('/', '_').replace('\\', '_').replace(':', '')
-#                 headers.extend([
-#                     f'disco_{path_safe}_used',
-#                     f'disco_{path_safe}_percent'
-#                 ])
-
-#             writer.writerow(headers)
-
-#         with open(process_file, mode='w', newline='') as file:
-#             writer = csv.writer(file)
-#             writer.writerow(['data_hora', 'uptime', 'process_name', 'memory_percent', 'cpu_percent', 'vms'])
-
-#         print(f"Novos arquivos de monitoramento criados:")
-#         print(f"- {output_file}")
-#         print(f"- {process_file}")
-
-#         record_count = 0
-#         return output_file, process_file, discos
-
-#     current_file, current_process_file, discos = create_new_files()
-    
 #     while True:
 #         try:
-#             if record_count >= 100:
-#                 send_file_to_api(current_file, api_url)
-#                 send_file_to_api(current_process_file, api_url)
-#                 current_file, current_process_file, discos = create_new_files()
+#             dados = colectALL(discos)
+#             print("Dados coletados:", dados)
 
-#             data_hora = datetime.now().strftime('%d/%m/%Y %H:%M:%S')
-#             uptime = tempoData()
-
-#             cpuFreq, cpuPercent = cpuData()
-#             ramUsed, ramPercent = ramData()
-
-#             row = [
-#                 data_hora,
-#                 uptime,
-#                 cpuFreq.current,
-#                 cpuPercent,
-#                 ramUsed,
-#                 ramPercent
-#             ]
-
-#             for disco in discos:
-#                 try:
-#                     disk_used, disk_percent = diskData(disco['path'])
-#                     row.extend([disk_used, disk_percent])
-#                 except Exception as e:
-#                     print(f"Erro ao acessar disco {disco['path']}: {str(e)}")
-#                     row.extend([None, None])
-
-#             with open(current_file, mode='a', newline='') as file:
-#                 writer = csv.writer(file)
-#                 writer.writerow(row)
-
-#             processes = processData()
-#             with open(current_process_file, mode='a', newline='') as file:
-#                 writer = csv.writer(file)
-#                 for proc in processes:
-#                     writer.writerow([
-#                         data_hora,
-#                         uptime,
-#                         proc['name'],
-#                         proc['memory_percent'],
-#                         proc['cpu_percent'],
-#                         proc['vms']
-#                     ])
-
-#             record_count += 1
+#             processos = processData()
+#             print("Total de processos monitorados:", len(processos))
+#             for proc in processos:
+#                 print(proc)
+#             print(dados)     
+#             print(processos)     
 #             time.sleep(2)
 
 #         except KeyboardInterrupt:
 #             print("\nMonitoramento encerrado pelo usuário")
-#             send_file_to_api(current_file, api_url)
-#             send_file_to_api(current_process_file, api_url)
 #             break
 
 #         except Exception as e:
 #             print(f"Erro durante o monitoramento: {str(e)}")
 #             time.sleep(2)
 
+# monitorar()
 
-import os
 import psutil
-from datetime import datetime
 import time
-from setup import getDiscos
+from datetime import datetime
 
+def obter_dados_cpu():
+    freq = psutil.cpu_freq()
+    return {
+        'percent': psutil.cpu_percent(),
+        'freq_current': freq.current,
+        'freq_min': freq.min,
+        'freq_max': freq.max
+    }
 
-def cpuData():
-    cpuFreq = psutil.cpu_freq()
-    cpuPercent = psutil.cpu_percent()
-    return cpuFreq, cpuPercent
+def obter_dados_ram():
+    mem = psutil.virtual_memory()
+    return {
+        'used': mem.used,
+        'percent': mem.percent,
+        'available': mem.available,
+        'total': mem.total
+    }
 
-def ramData():
-    ramUsed = psutil.virtual_memory().used
-    ramPercent = psutil.virtual_memory().percent
-    return ramUsed, ramPercent
+def obter_dados_disco(path):
+    uso = psutil.disk_usage(path)
+    return {
+        'used': uso.used,
+        'percent': uso.percent,
+        'free': uso.free,
+        'total': uso.total
+    }
 
-def diskData(path):
-    diskUsed = psutil.disk_usage(path).used
-    diskPercent = psutil.disk_usage(path).percent
-    return diskUsed, diskPercent
+def obter_dados_rede():
+    io = psutil.net_io_counters()
+    return {
+        'bytes_sent': io.bytes_sent,
+        'bytes_recv': io.bytes_recv,
+        'packets_sent': io.packets_sent,
+        'packets_recv': io.packets_recv
+    }
 
-def netData():
-    bytesSend = psutil.net_io_counters().bytes_sent
-    bytesRecv = psutil.net_io_counters().bytes_recv
-    return [bytesRecv, bytesSend]
-
-def processData():
-    processes = []
-    for proc in psutil.process_iter(['name', 'memory_percent', 'cpu_percent', 'memory_info']):
+def obter_processos():
+    processos = []
+    for proc in psutil.process_iter(['pid', 'name', 'memory_percent', 'cpu_percent']):
         try:
-            process_info = {
+            processos.append({
+                'pid': proc.info['pid'],
                 'name': proc.info['name'],
                 'memory_percent': proc.info['memory_percent'],
-                'cpu_percent': proc.info['cpu_percent'],
-                'vms': proc.info['memory_info'].vms if proc.info['memory_info'] else None
-            }
-            processes.append(process_info)
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                'cpu_percent': proc.info['cpu_percent']
+            })
+        except psutil.NoSuchProcess:
             continue
-    return processes
+    return processos
 
-def colectALL(discos):
-    cpuFreq, cpuPercent = cpuData()
-    ramUsed, ramPercent = ramData()
-    netRecv, netSend = netData()
-
-    row = [
-        cpuFreq.current,
-        cpuPercent,
-        ramUsed,
-        ramPercent,
-        netRecv,
-        netSend
-    ]
-
-    for disco in discos:
-        try:
-            disk_used, disk_percent = diskData(disco['path'])
-            row.extend([disk_used, disk_percent])
-        except Exception as e:
-            print(f"Erro ao acessar disco {disco['path']}: {str(e)}")
-            row.extend([None, None])
-
-    return row
-
-def monitorar():
-    discos = getDiscos("linux")
-
-    while True:
-        try:
-            dados = colectALL(discos)
-            print("Dados coletados:", dados)
-
-            processos = processData()
-            print("Total de processos monitorados:", len(processos))
-            for proc in processos:
-                print(proc)
-            print(dados)     
-            print(processos)     
+def monitorar_componentes_selecionados(componentes):
+    try:
+        while True:
+            dados = {}
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            
+            for comp in componentes:
+                try:
+                    if comp['type'] == 'cpu':
+                        dados['cpu'] = obter_dados_cpu()
+                    elif comp['type'] == 'ram':
+                        dados['ram'] = obter_dados_ram()
+                    elif comp['type'] == 'disk' and comp['path']:  # Verifica se há path
+                        try:
+                            dados['disk'] = {
+                                'path': comp['path'],
+                                **obter_dados_disco(comp['path'])
+                            }
+                        except Exception as e:
+                            print(f"Erro ao monitorar disco {comp['path']}: {str(e)}")
+                            dados['disk'] = None
+                    elif comp['type'] == 'network':
+                        dados['network'] = obter_dados_rede()
+                except Exception as e:
+                    print(f"Erro ao monitorar {comp['type']}: {str(e)}")
+                    dados[comp['type']] = None
+            
+            # Exibir dados formatados
+            print(f"\n=== Dados em {timestamp} ===")
+            for tipo, valores in dados.items():
+                if valores is None:
+                    continue
+                    
+                print(f"\n{tipo.upper()}:")
+                if tipo == 'disk':
+                    print(f"  Disco: {valores['path']}")
+                    for chave, valor in valores.items():
+                        if chave != 'path':
+                            print(f"  {chave}: {valor}")
+                else:
+                    for chave, valor in valores.items():
+                        print(f"  {chave}: {valor}")
+            
             time.sleep(2)
-
-        except KeyboardInterrupt:
-            print("\nMonitoramento encerrado pelo usuário")
-            break
-
-        except Exception as e:
-            print(f"Erro durante o monitoramento: {str(e)}")
-            time.sleep(2)
-
-monitorar()
-
+            
+    except KeyboardInterrupt:
+        print("\nMonitoramento encerrado pelo usuário")
+    except Exception as e:
+        print(f"\nErro no monitoramento: {str(e)}")
 
 
    
