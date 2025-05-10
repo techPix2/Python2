@@ -4,22 +4,22 @@ from mysql.connector import Error
 select = mysql.connector.connect(
     host="localhost",
     port="3306",
-    user="techpix_select",
-    password="techpix#2024",
+    user="root",
+    password="Nocelli@1",
     database="TechPix"
 )
 
 cursorSelect = select.cursor()
 
-def buscarUsuario(name, password):
+def buscarUsuario(email, password):
     """Retorna (success, company_id) se válido, False caso contrário"""
-    query = "SELECT idEmployer, fkCompany FROM Employer WHERE name = %s AND password = %s"
+    query = "SELECT idEmployer, fkCompany FROM Employer WHERE email = %s AND password = %s"
     try:
-        cursorSelect.execute(query, (name, password))
+        cursorSelect.execute(query, (email, password))
         result = cursorSelect.fetchone()
         if result:
             print("Login realizado com sucesso!")
-            return (True, result[1])  # (success, company_id)
+            return (True)  
         else:
             print("Usuário ou senha incorretos!")
             return False

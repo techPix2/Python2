@@ -5,8 +5,8 @@ import mysql.connector
 import subprocess
 import json
 import re
+from database import buscarUsuario
 
-from database import cursorInsert, cursorSelect, insert, select
 
 so = platform.system().lower()
 version = platform.release()
@@ -278,3 +278,4 @@ def sync_components(fkServer, fkCompany, so):
         print(f"❌ Erro inesperado durante sincronização: {str(e)}")
         insert.rollback()
         return False
+    
