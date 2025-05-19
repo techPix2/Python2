@@ -58,7 +58,7 @@ import platform
 import os
 import time
 from setup import get_system_components
-from extract import monitorar_componentes_selecionados
+from extract import monitorar_componentes_selecionados, processData
 from database import buscarUsuario
 
 def clear_screen():
@@ -111,11 +111,13 @@ def main():
         so = platform.system().lower()
         componentes = selecionar_componentes(so)
         
+        processData()
         if componentes:
             print("\nIniciando monitoramento...")
             print("Pressione Ctrl+C para encerrar\n")
             time.sleep(1)
             monitorar_componentes_selecionados(componentes)
+
 
 if __name__ == "__main__":
     main()

@@ -3,6 +3,27 @@ import os
 import time
 from datetime import datetime
 
+def processData():
+    processes = []
+    for proc in psutil.process_iter(['pid', 'name', 'memory_percent', 'cpu_percent', 'memory_info']):
+        try:
+            process_info = {
+                'PID': proc.info['pid'],
+                'name': proc.info['name'],
+                'memory_percent': proc.info['memory_percent'],
+                'cpu_percent': proc.info['cpu_percent'],
+                'vms': proc.info['memory_info'].vms if proc.info['memory_info'] else None
+            }
+            print(process_info)
+            processes.append(process_info)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+    processes['cpu_percent'].sort
+    processes[1:6]
+    
+    return processes
+
+
 def obter_metricas_cpu():
     freq = psutil.cpu_freq()
     return {
