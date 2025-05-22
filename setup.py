@@ -1,8 +1,8 @@
 import os
 
-def get_system_components(so):
+def componentes_sistema():
     """Detecta componentes com foco nos parâmetros solicitados"""
-    # Disco principal (apenas um)
+    # DI
     disco_principal = {
         'type': 'disk',
         'name': 'Disco Principal',
