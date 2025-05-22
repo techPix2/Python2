@@ -1,7 +1,3 @@
-
-
-import platform
-import psutil
 import os
 
 def get_system_components(so):

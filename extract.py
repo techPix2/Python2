@@ -3,26 +3,34 @@ import os
 import time
 from datetime import datetime
 
-def processData():
-    processes = []
-    for proc in psutil.process_iter(['pid', 'name', 'memory_percent', 'cpu_percent', 'memory_info']):
+def obter_top_processos_cpu():
+    processos = []
+
+    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent']):
         try:
-            process_info = {
-                'PID': proc.info['pid'],
-                'name': proc.info['name'],
-                'memory_percent': proc.info['memory_percent'],
-                'cpu_percent': proc.info['cpu_percent'],
-                'vms': proc.info['memory_info'].vms if proc.info['memory_info'] else None
-            }
-            print(process_info)
-            processes.append(process_info)
+            proc.cpu_percent(interval=None)
+            processos.append(proc)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
-    processes['cpu_percent'].sort
-    processes[1:6]
-    
-    return processes
 
+    time.sleep(1)
+
+    resultados = []
+
+    for proc in processos:
+        try:
+            cpu = proc.cpu_percent(interval=None)
+            if cpu > 0:
+                resultados.append({
+                    'pid': proc.info['pid'],
+                    'name': proc.info['name'],
+                    'cpu_percent': cpu
+                })
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
+    top_processos = sorted(resultados, key=lambda x: x['cpu_percent'], reverse=True)[:10]
+    return top_processos
 
 def obter_metricas_cpu():
     freq = psutil.cpu_freq()
@@ -56,7 +64,6 @@ def obter_metricas_rede():
 
 def monitorar_componentes_selecionados(componentes):
     try:
-        # Cabeçalho inicial
         print("=== TechPix Monitor ===")
         print("Pressione Ctrl+C para encerrar\n")
         
@@ -89,11 +96,17 @@ def monitorar_componentes_selecionados(componentes):
                         print("\nREDE:")
                         for k, v in metricas.items():
                             print(f"  {k}: {v}")
-                            
+
+                    elif comp['type'] == 'process':
+                        top_processos = obter_top_processos_cpu()
+                        print("\nTOP 10 Processos por Uso de CPU:")
+                        for proc in top_processos:
+                            print(f"  PID: {proc['pid']:<8} Nome: {proc['name'][:20]:<20} CPU: {proc['cpu_percent']:>6.1f}%")
+
                 except Exception as e:
                     print(f"\nErro ao monitorar {comp['type']}: {str(e)}")
             
-            print("\n" + "="*40)  # Linha separadora
+            print("\n" + "="*40)
             time.sleep(2)
             
     except KeyboardInterrupt:
