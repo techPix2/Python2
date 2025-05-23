@@ -21,11 +21,12 @@ def obter_top_processos_cpu():
         try:
             cpu = proc.cpu_percent(interval=None)
             if cpu > 0:
-                resultados.append({
-                    'pid': proc.info['pid'],
-                    'name': proc.info['name'],
-                    'cpu_percent': cpu
-                })
+                if proc.info['name'] != "System Idle Process":
+                    resultados.append({
+                        'pid': proc.info['pid'],
+                        'name': proc.info['name'],
+                        'cpu_percent': cpu
+                    })
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
 
@@ -101,7 +102,7 @@ def monitorar_componentes_selecionados(componentes):
                         top_processos = obter_top_processos_cpu()
                         print("\nTOP 10 Processos por Uso de CPU:")
                         for proc in top_processos:
-                            print(f"  PID: {proc['pid']:<8} Nome: {proc['name'][:20]:<20} CPU: {proc['cpu_percent']:>6.1f}%")
+                           print("PID:", proc['pid'], "Nome:", proc['name'], "CPU:", proc['cpu_percent'], "%")
 
                 except Exception as e:
                     print(f"\nErro ao monitorar {comp['type']}: {str(e)}")
