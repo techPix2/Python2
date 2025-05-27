@@ -36,5 +36,3 @@ def main():
 
         monitorar_componentes_selecionados(componentes)
 
-if __name__ == "__main__":
-    main()

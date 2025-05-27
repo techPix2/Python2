@@ -112,3 +112,12 @@ def monitorar_componentes_selecionados(componentes):
             
     except KeyboardInterrupt:
         print("\nMonitoramento encerrado pelo usuário")
+
+def coletar_todas_metricas():
+    return {
+        'cpu': obter_metricas_cpu(),
+        'ram': obter_metricas_ram(),
+        'disk': obter_metricas_disco(),
+        'network': obter_metricas_rede(),
+        'top_processos': obter_top_processos_cpu()
+    }
