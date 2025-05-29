@@ -1,6 +1,6 @@
 import os
 import time
-from extract import monitorar_componentes_selecionados
+from extract import coletar_todas_metricas, enviarDados, loop_envio
 from database import buscarUsuario
 
 def clear_screen():
@@ -22,20 +22,15 @@ def login():
 
 def main():
     if login():
-        componentes = [
-            {'type': 'cpu'},
-            {'type': 'ram'},
-            {'type': 'disk'},
-            {'type': 'network'},
-            {'type': 'process'}
-        ]
         
         print("\nIniciando monitoramento...")
         print("Pressione Ctrl+C para encerrar\n")
         time.sleep(1)
 
-        monitorar_componentes_selecionados(componentes)
+        loop_envio()
+        enviarDados(coletar_todas_metricas())
 
+        
 
 if __name__ == "__main__":
         main()

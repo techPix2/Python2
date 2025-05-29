@@ -2,24 +2,24 @@ import psutil
 import os
 import time
 from datetime import datetime
-import requests 
+import requests
+import json
 
-
-
-
-def inserirAlerta(enviados):
+# Função para enviar os dados via POST
+def enviarDados(enviados):
     try:
-        fetch_inserirAlerta = "http://localhost:3333/"
-        resposta = requests.post(fetch_inserirAlerta, json={"dadosEnviados": enviados})
+        urlNode = "http://localhost:80/dashMatheus/dadosMaquina"
+        resposta = requests.post(urlNode, json={"dadosEnviados": enviados})
         if resposta.status_code == 200:
-            print("Alerta inserido com sucesso")
-            print(resposta.json())
+            print("Dados enviados com sucesso")
+            print(json.dumps(resposta.json(), indent=4))
         else:
-            print(f"Erro ao inserir alerta: {resposta.status_code}")
+            print(f"Erro ao enviar dados: {resposta.status_code}")
             print(resposta.text)
     except Exception as e:
-        print(f"Erro ao conectar ROTA INSERIR: {e}")
+        print(f"Erro ao enviar dados: {e}")
 
+# Função principal que coleta todas as métricas
 def coletar_todas_metricas():
     return {
         'cpu': obter_metricas_cpu(),
@@ -29,7 +29,7 @@ def coletar_todas_metricas():
         'top_processos': obter_top_processos_cpu()
     }
 
-
+# Função para obter o top 10 processos que mais consomem CPU
 def obter_top_processos_cpu():
     processos = []
 
@@ -40,26 +40,26 @@ def obter_top_processos_cpu():
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
 
-    time.sleep(1)
+    time.sleep(1)  # Espera para capturar o uso real de CPU
 
     resultados = []
 
     for proc in processos:
         try:
             cpu = proc.cpu_percent(interval=None)
-            if cpu > 0:
-                if proc.info['name'] != "System Idle Process":
-                    resultados.append({
-                        'pid': proc.info['pid'],
-                        'name': proc.info['name'],
-                        'cpu_percent': cpu
-                    })
+            if cpu > 0 and proc.info['name'] != "System Idle Process":
+                resultados.append({
+                    'pid': proc.info['pid'],
+                    'name': proc.info['name'],
+                    'cpu_percent': cpu
+                })
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue
 
     top_processos = sorted(resultados, key=lambda x: x['cpu_percent'], reverse=True)[:10]
     return top_processos
 
+# Coleta métricas da CPU
 def obter_metricas_cpu():
     freq = psutil.cpu_freq()
     return {
@@ -67,6 +67,7 @@ def obter_metricas_cpu():
         'Frequência (MHz)': freq.current
     }
 
+# Coleta métricas da RAM
 def obter_metricas_ram():
     mem = psutil.virtual_memory()
     return {
@@ -75,6 +76,7 @@ def obter_metricas_ram():
         'Disponível (GB)': round(mem.available / (1024**3), 2)
     }
 
+# Coleta métricas do disco
 def obter_metricas_disco():
     disco_principal = 'C:\\' if os.name == 'nt' else '/'
     uso = psutil.disk_usage(disco_principal)
@@ -83,6 +85,7 @@ def obter_metricas_disco():
         'Uso (%)': uso.percent
     }
 
+# Coleta métricas de rede
 def obter_metricas_rede():
     io = psutil.net_io_counters()
     return {
@@ -90,57 +93,27 @@ def obter_metricas_rede():
         'Pacotes Recebidos': io.packets_recv
     }
 
-def monitorar_componentes_selecionados(componentes):
-    try:
-        print("=== TechPix Monitor ===")
-        print("Pressione Ctrl+C para encerrar\n")
-        
-        while True:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"\n--- Atualização {timestamp} ---")
-            
-            for comp in componentes:
-                try:
-                    if comp['type'] == 'cpu':
-                        metricas = obter_metricas_cpu()
-                        print("\nCPU:")
-                        for k, v in metricas.items():
-                            print(f"  {k}: {v}")
-                            
-                    elif comp['type'] == 'ram':
-                        metricas = obter_metricas_ram()
-                        print("\nRAM:")
-                        for k, v in metricas.items():
-                            print(f"  {k}: {v}")
-                            
-                    elif comp['type'] == 'disk':
-                        metricas = obter_metricas_disco()
-                        print("\nDISCO:")
-                        for k, v in metricas.items():
-                            print(f"  {k}: {v}")
-                            
-                    elif comp['type'] == 'network':
-                        metricas = obter_metricas_rede()
-                        print("\nREDE:")
-                        for k, v in metricas.items():
-                            print(f"  {k}: {v}")
+def loop_envio(intervalo=0.1):
+    print("Iniciando envio contínuo de métricas...")
+    while True:
+        try:
+            # 1. Coleta os dados
+            metricas = coletar_todas_metricas()
+            print("\n--- Dados Coletados ---")
+            print(json.dumps(metricas, indent=2))  # Log para depuração
 
-                    elif comp['type'] == 'process':
-                        top_processos = obter_top_processos_cpu()
-                        print("\nTOP 10 Processos por Uso de CPU:")
-                        for proc in top_processos:
-                           print("PID:", proc['pid'], "Nome:", proc['name'], "CPU:", proc['cpu_percent'], "%")
+            # 2. Envia os dados para o servidor
+            enviarDados(metricas)
 
-                except Exception as e:
-                    print(f"\nErro ao monitorar {comp['type']}: {str(e)}")
-            
-            print("\n" + "="*40)
-            time.sleep(2)
-            
-    except KeyboardInterrupt:
-        print("\nMonitoramento encerrado pelo usuário")
+            # 3. Aguarda o intervalo definido
+            time.sleep(intervalo)
 
+        except KeyboardInterrupt:
+            print("\nMonitoramento encerrado pelo usuário.")
+            break  # Sai do loop se o usuário pressionar Ctrl+C
 
-
-enviados = coletar_todas_metricas()
-
+        except Exception as e:
+            print(f"\n[ERRO] Falha no ciclo de envio: {e}")
+            print("Tentando novamente em 5 segundos...")
+            time.sleep(2)  # Espera um pouco antes de tentar novamente
+            continue  # Continua o loop
