@@ -2,6 +2,33 @@ import psutil
 import os
 import time
 from datetime import datetime
+import requests 
+
+
+
+
+def inserirAlerta(enviados):
+    try:
+        fetch_inserirAlerta = "http://localhost:3333/"
+        resposta = requests.post(fetch_inserirAlerta, json={"dadosEnviados": enviados})
+        if resposta.status_code == 200:
+            print("Alerta inserido com sucesso")
+            print(resposta.json())
+        else:
+            print(f"Erro ao inserir alerta: {resposta.status_code}")
+            print(resposta.text)
+    except Exception as e:
+        print(f"Erro ao conectar ROTA INSERIR: {e}")
+
+def coletar_todas_metricas():
+    return {
+        'cpu': obter_metricas_cpu(),
+        'ram': obter_metricas_ram(),
+        'disk': obter_metricas_disco(),
+        'network': obter_metricas_rede(),
+        'top_processos': obter_top_processos_cpu()
+    }
+
 
 def obter_top_processos_cpu():
     processos = []
@@ -113,11 +140,7 @@ def monitorar_componentes_selecionados(componentes):
     except KeyboardInterrupt:
         print("\nMonitoramento encerrado pelo usuário")
 
-def coletar_todas_metricas():
-    return {
-        'cpu': obter_metricas_cpu(),
-        'ram': obter_metricas_ram(),
-        'disk': obter_metricas_disco(),
-        'network': obter_metricas_rede(),
-        'top_processos': obter_top_processos_cpu()
-    }
+
+
+enviados = coletar_todas_metricas()
+
