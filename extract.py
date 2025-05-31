@@ -4,6 +4,7 @@ import time
 from datetime import datetime
 import requests
 import json
+import base64
 
 # Função para enviar os dados via POST
 def enviarDados(enviados):
@@ -18,6 +19,42 @@ def enviarDados(enviados):
             print(resposta.text)
     except Exception as e:
         print(f"Erro ao enviar dados: {e}")
+
+
+def criar_issue_jira(titulo, descricao):
+    JIRA_DOMAIN = 'techpix.atlassian.net'  
+    PROJECT_KEY = 'TECH'                    
+    JIRA_EMAIL = 'techpix.sptech@gmail.com'       
+    JIRA_API_TOKEN = 'ATATT3xFfGF0633uV3Ia8PHiXys7NGu0Q1GEekwjkJRncW4NHaXNpiH4ZrzW5dChG0_XDMvABd-JWlM-eCTy3hIGNXX6ttVeZT8SDc_6_mjAxKTw5ba_n14vbGT5v-tbgwul4zp5duLoyDVQjoAPKf8SMNuV9xS_W_W8-YOtGLxa06v3Iq_vOLU=03A2E16C'     
+        
+
+    url = f'https://{JIRA_DOMAIN}/rest/api/2/issue'
+
+    payload = {
+        "fields": {
+            "project": {"key": PROJECT_KEY},
+            "summary": titulo,
+            "description": descricao,
+            "issuetype": {"name": "Task"},
+            "priority": { "name": "High" },
+             
+        }
+    }
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": "Basic " + base64.b64encode(f"{JIRA_EMAIL}:{JIRA_API_TOKEN}".encode()).decode()
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers)
+        if response.status_code == 201:
+            print("[JIRA] Issue criada com sucesso:", response.json()['key'])
+        else:
+            print("[JIRA] Erro ao criar issue:", response.status_code)
+            print(response.text)
+    except Exception as e:
+        print(f"[JIRA] Exceção ao criar issue: {e}")
 
 # Função principal que coleta todas as métricas
 def coletar_todas_metricas():
@@ -100,20 +137,42 @@ def loop_envio(intervalo=0.1):
             # 1. Coleta os dados
             metricas = coletar_todas_metricas()
             print("\n--- Dados Coletados ---")
-            print(json.dumps(metricas, indent=2))  # Log para depuração
+            print(json.dumps(metricas, indent=2))
 
             # 2. Envia os dados para o servidor
             enviarDados(metricas)
 
-            # 3. Aguarda o intervalo definido
+
+            # 3. Verificação de alertas
+            cpu = metricas['cpu']['Uso (%)']
+            ram = metricas['ram']['Uso (%)']
+            disco = metricas['disk']['Uso (%)']
+
+            if cpu > 75:
+                criar_issue_jira(
+                    titulo="⚠️ Alerta: CPU acima de 75%",
+                    descricao=f"O uso da CPU atingiu {cpu}%."
+                )
+
+            if ram > 75:
+                criar_issue_jira(
+                    titulo="⚠️ Alerta: RAM acima de 75%",
+                    descricao=f"O uso de RAM atingiu {ram}%."
+                )
+
+            if disco > 90:
+                criar_issue_jira(
+                    titulo="⚠️ Alerta: Disco acima de 75%",
+                    descricao=f"O uso de disco atingiu {disco}%."
+                )
+
+            # 4. Aguarda o intervalo
             time.sleep(intervalo)
 
         except KeyboardInterrupt:
             print("\nMonitoramento encerrado pelo usuário.")
-            break  # Sai do loop se o usuário pressionar Ctrl+C
-
+            break
         except Exception as e:
             print(f"\n[ERRO] Falha no ciclo de envio: {e}")
             print("Tentando novamente em 5 segundos...")
-            time.sleep(2)  # Espera um pouco antes de tentar novamente
-            continue  # Continua o loop
+            time.sleep(5)
