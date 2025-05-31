@@ -176,3 +176,29 @@ def loop_envio(intervalo=0.1):
             print(f"\n[ERRO] Falha no ciclo de envio: {e}")
             print("Tentando novamente em 5 segundos...")
             time.sleep(5)
+
+
+
+# função  loopenvio padrão para testes sem enviar  para o jira 
+
+# def loop_envio(intervalo=0.1):
+#     print("Iniciando envio contínuo de métricas...")
+#     while True:
+#         try:
+#             # 1. Coleta os dados
+#             metricas = coletar_todas_metricas()
+#             print("\n--- Dados Coletados ---")
+#             print(json.dumps(metricas, indent=2))
+
+#             # 2. Envia os dados para o servidor
+#             enviarDados(metricas)
+#                 # 4. Aguarda o intervalo
+#             time.sleep(intervalo)
+
+#         except KeyboardInterrupt:
+#             print("\nMonitoramento encerrado pelo usuário.")
+#             break
+#         except Exception as e:
+#             print(f"\n[ERRO] Falha no ciclo de envio: {e}")
+#             print("Tentando novamente em 5 segundos...")
+#             time.sleep(5)
